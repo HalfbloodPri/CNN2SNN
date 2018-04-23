@@ -1,0 +1,2 @@
+model_checkpoint_path: "mnistCNNBiGDO0-10000"
+all_model_checkpoint_paths: "mnistCNNBiGDO0-10000"

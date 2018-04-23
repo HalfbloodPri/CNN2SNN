@@ -1,7 +1,7 @@
 from tensorflow.examples.tutorials.mnist import input_data
 import tensorflow as tf
 
-mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
+mnist = input_data.read_data_sets("CNN-Train/MNIST_data/", one_hot=True)
 sess = tf.InteractiveSession()
 '''生成权值'''
 def weight_variable(shape):
@@ -17,7 +17,7 @@ def avg_pool_2x2(x):
 x = tf.placeholder(tf.float32, [None, 784])     #原始的n*784的向量
 y_ = tf.placeholder(tf.float32, [None, 10])     #标签
 x_image = tf.reshape(x, [-1,28,28,1])       #n*28*28的MNIST数据
-
+#####训练过程
 '''
 第一层卷积，把28*28的图片分成12*12的9张小图片，每两张之间有4行/列像素点的重叠；
 然后进行分组卷积，每张小图片进行独立的常规卷积操作，采用8个5*5的卷积核，每个
@@ -66,17 +66,27 @@ h_pool2_flat = tf.reshape(h_pool2_merge,[-1,32*4*4])
 y = tf.nn.softmax(tf.matmul(h_pool2_flat,W_fc))
 '''定义损失值'''
 cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_*tf.log(y), reduction_indices=[1]))
+#Wloss_conv1 = tf.reduce_mean(tf.reduce_sum(tf.where(tf.greater(W_conv1,0.0), tf.square(W_conv1-1.0), tf.square(W_conv1+1.0)), reduction_indices=[1]))
+#Wloss_conv2 = tf.reduce_mean(tf.reduce_sum(tf.where(tf.greater(W_conv2,0.0), tf.square(W_conv2-1.0), tf.square(W_conv2+1.0)), reduction_indices=[1]))
+#Wloss_fc = tf.reduce_mean(tf.reduce_sum(tf.where(tf.greater(W_fc,0.0), tf.square(W_fc-1.0), tf.square(W_fc+1.0)), reduction_indices=[1]))
+#fullLoss = cross_entropy + 0.1*(Wloss_conv1+Wloss_conv2+Wloss_fc)
 train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
 '''定义准确率'''
 correct_prediction = tf.equal(tf.argmax(y,1),tf.argmax(y_,1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+#####定义Saver
+saver = tf.train.Saver(tf.global_variables())
+################################################################################
 '''接下来是训练过程'''
 tf.global_variables_initializer().run()
-for i in range(1000):
+for i in range(400000):
     batch = mnist.train.next_batch(50)
-    if i%100 == 0:
-        train_accuracy = accuracy.eval(feed_dict={x:batch[0], y_:batch[1]})
-        print("step %d, training accuracy %g"%(i, train_accuracy))
+    if i%1000 == 0:
+        #train_accuracy = accuracy.eval(feed_dict={x:batch[0], y_:batch[1]})
+        #print("step %d, training accuracy %g"%(i, train_accuracy))
+        print("step %d, test accuracy %g"%(i,accuracy.eval(feed_dict={x:mnist.test.images, y_:mnist.test.labels})))
     train_step.run(feed_dict={x: batch[0], y_:batch[1]})
 '''验证在测试集上的准确率'''
 print("test accuracy %g"%accuracy.eval(feed_dict={x:mnist.test.images, y_:mnist.test.labels}))
+
+saver.save(sess, 'CNN-Train/mnistCNNFull', global_step=i)
